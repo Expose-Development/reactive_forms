@@ -16,7 +16,7 @@ export 'src/exceptions/validator_exception.dart';
 export 'src/exceptions/value_accessor_exception.dart';
 export 'src/models/control_state.dart';
 export 'src/models/control_status.dart';
-export 'src/models/errors_mode.dart';
+export 'src/models/validation_mode.dart';
 export 'src/models/focus_controller.dart';
 export 'src/models/form_builder.dart';
 export 'src/models/models.dart';

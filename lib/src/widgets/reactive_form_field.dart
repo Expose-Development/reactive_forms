@@ -55,7 +55,7 @@ class ReactiveFormField<ModelDataType, ViewDataType> extends StatefulWidget {
   final FocusNode? focusNode;
 
   /// Responsible for the moment when validation errors will be displayed.
-  final ErrorsMode errorsMode;
+  final ValidationMode validationMode;
 
   /// Creates an instance of the [ReactiveFormField].
   ///
@@ -71,7 +71,7 @@ class ReactiveFormField<ModelDataType, ViewDataType> extends StatefulWidget {
     this.showErrors,
     this.validationMessages,
     this.focusNode,
-    this.errorsMode = ErrorsMode.normal,
+    this.validationMode = ValidationMode.reactive,
     required ReactiveFormFieldBuilder<ModelDataType, ViewDataType> builder,
   })  : assert(
             (formControlName != null && formControl == null) ||
@@ -133,9 +133,9 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
     final autoShowErrorsCondition = control.invalid && touched;
 
     if (showErrors == null) {
-      return switch (widget.errorsMode) {
-        ErrorsMode.manual => _isValidCalled && autoShowErrorsCondition,
-        ErrorsMode.normal => autoShowErrorsCondition,
+      return switch (widget.validationMode) {
+        ValidationMode.manual => _isValidCalled && autoShowErrorsCondition,
+        ValidationMode.reactive => autoShowErrorsCondition,
       };
     }
 

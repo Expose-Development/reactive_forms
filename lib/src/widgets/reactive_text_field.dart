@@ -97,7 +97,7 @@ class ReactiveTextField<T> extends ReactiveFormField<T, String> {
     super.valueAccessor,
     super.showErrors,
     super.focusNode,
-    super.errorsMode,
+    super.validationMode,
     InputDecoration decoration = const InputDecoration(),
     TextInputType? keyboardType,
     TextCapitalization textCapitalization = TextCapitalization.none,
