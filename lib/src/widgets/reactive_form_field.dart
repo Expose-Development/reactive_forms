@@ -54,6 +54,9 @@ class ReactiveFormField<ModelDataType, ViewDataType> extends StatefulWidget {
   /// TODO: add documentation
   final FocusNode? focusNode;
 
+  /// Responsible for the moment when validation errors will be displayed.
+  final ValidationMode validationMode;
+
   /// Creates an instance of the [ReactiveFormField].
   ///
   /// Must provide a [forControlName] or a [formControl] but not both
@@ -68,6 +71,7 @@ class ReactiveFormField<ModelDataType, ViewDataType> extends StatefulWidget {
     this.showErrors,
     this.validationMessages,
     this.focusNode,
+    this.validationMode = ValidationMode.reactive,
     required ReactiveFormFieldBuilder<ModelDataType, ViewDataType> builder,
   })  : assert(
             (formControlName != null && formControl == null) ||
@@ -87,10 +91,14 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   late FormControl<ModelDataType> control;
   late StreamSubscription<ControlStatus> _statusChangesSubscription;
   late StreamSubscription<bool> _touchChangesSubscription;
+  late StreamSubscription<void> _manualValidationSubscription;
   late ControlValueAccessor<ModelDataType, ViewDataType> _valueAccessor;
 
   /// Gets the value of the [FormControl] given by the [valueAccessor].
   ViewDataType? get value => valueAccessor.modelToViewValue(control.value);
+
+  /// Becomes true if validate() was called in [FormControl], if value is changed it will be false
+  bool _isValidCalled = false;
 
   /// Gets true if the widget is touched, otherwise return false.
   bool get touched => control.touched;
@@ -120,11 +128,18 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   }
 
   bool get _showErrors {
-    if (widget.showErrors != null) {
-      return widget.showErrors!(control);
+    final showErrors = widget.showErrors;
+
+    final autoShowErrorsCondition = control.invalid && touched;
+
+    if (showErrors == null) {
+      return switch (widget.validationMode) {
+        ValidationMode.manual => _isValidCalled && autoShowErrorsCondition,
+        ValidationMode.reactive => autoShowErrorsCondition,
+      };
     }
 
-    return control.invalid && touched;
+    return showErrors(control);
   }
 
   @override
@@ -186,6 +201,8 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
         control.statusChanged.listen(_onControlStatusChanged);
     _touchChangesSubscription =
         control.touchChanges.listen(_onControlTouchChanged);
+    _manualValidationSubscription = control.manualValidationEvents
+        .listen((_) => _onControlManualValidationEvent());
     _subscribeValueAccessor();
   }
 
@@ -194,6 +211,7 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   void unsubscribeControl() {
     _statusChangesSubscription.cancel();
     _touchChangesSubscription.cancel();
+    _manualValidationSubscription.cancel();
     valueAccessor.dispose();
   }
 
@@ -208,6 +226,8 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   ///
   /// Updates the value of the [FormControl] bound to this widget.
   void didChange(ViewDataType? value) {
+    setState(() => _isValidCalled = false);
+
     _valueAccessor.updateModel(value);
     _checkTouchedState();
   }
@@ -231,6 +251,10 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
 
   void _onControlTouchChanged(bool touched) {
     setState(() {});
+  }
+
+  void _onControlManualValidationEvent() {
+    setState(() => _isValidCalled = true);
   }
 
   ControlValueAccessor<ModelDataType, ViewDataType> _resolveValueAccessor() {
