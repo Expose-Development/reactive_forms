@@ -22,6 +22,8 @@ abstract class AbstractControl<T> {
   final _statusChanges = StreamController<ControlStatus>.broadcast();
   final _valueChanges = StreamController<T?>.broadcast();
   final _touchChanges = StreamController<bool>.broadcast();
+  final _manualValidationEvents = StreamController<void>.broadcast();
+
   final List<Validator<dynamic>> _validators = <Validator<dynamic>>[];
   final List<AsyncValidator<dynamic>> _asyncValidators =
       <AsyncValidator<dynamic>>[];
@@ -203,6 +205,8 @@ abstract class AbstractControl<T> {
   /// is touched or untouched.
   Stream<bool> get touchChanges => _touchChanges.stream;
 
+  Stream<void> get manualValidationEvents => _manualValidationEvents.stream;
+
   /// A control is valid when its [status] is ControlStatus.valid.
   bool get valid => status == ControlStatus.valid;
 
@@ -342,6 +346,18 @@ abstract class AbstractControl<T> {
     }
   }
 
+  /// When [updateParent] is false, the call will be executed only for this control.
+  /// If the value of [updateParent] is true or not specified.
+  /// supplied, the call will be invoked on all direct ancestors. The default value is true.
+  /// This method also execute markAsTouched() inside.
+  void validate({bool updateParent = true}) {
+    _manualValidationEvents.add(null);
+    markAsTouched(updateParent: updateParent, emitEvent: true);
+    if (updateParent) {
+      parent?.validate(updateParent: updateParent);
+    }
+  }
+
   /// Marks the control and all its descendant controls as touched.
   ///
   /// When [updateParent] is false, mark only this control and descendants.
@@ -353,6 +369,11 @@ abstract class AbstractControl<T> {
   void markAllAsTouched({bool updateParent = true, bool emitEvent = true}) {
     markAsTouched(updateParent: updateParent, emitEvent: emitEvent);
     forEachChild((control) => control.markAllAsTouched(updateParent: false));
+  }
+
+  void validateAll({bool updateParent = true}) {
+    validate(updateParent: updateParent);
+    forEachChild((control) => control.validate(updateParent: false));
   }
 
   /// Marks the control as untouched.
