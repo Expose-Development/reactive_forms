@@ -226,8 +226,6 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   ///
   /// Updates the value of the [FormControl] bound to this widget.
   void didChange(ViewDataType? value) {
-    setState(() => _isValidCalled = false);
-
     _valueAccessor.updateModel(value);
     _checkTouchedState();
   }
@@ -246,7 +244,11 @@ class ReactiveFormFieldState<ModelDataType, ViewDataType>
   }
 
   void _onControlStatusChanged(ControlStatus status) {
-    setState(() {});
+    setState(() {
+      if(status == ControlStatus.valid) {
+        _isValidCalled = false;
+      }
+    });
   }
 
   void _onControlTouchChanged(bool touched) {
